@@ -29,7 +29,7 @@ public class WarehouseTest {
 
 
     @Test
-    void testAddProduct() {
+    void addProduct() {
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
 
@@ -39,7 +39,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testAddProductWithSameId() {
+    void addProductWithSameId() {
         warehouse.addProduct(product1);
 
         // Shows that function won't add products with same iD
@@ -52,7 +52,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testAddProductWithEmptyProductName() {
+    void addProductWithEmptyProductName() {
 
         // Shows that product with empty string can't be added
         assertThrows(IllegalArgumentException.class, () -> {
@@ -64,12 +64,12 @@ public class WarehouseTest {
 
 
     @Test
-    void testModifyProduct() {
+    void modifyProduct() {
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
         warehouse.addProduct(product5);
 
-        // org.laboration3.resource.Product before modification
+        // Product before modification
         Product product3BeforeModification = warehouse.getProductsArr().get(1);
 
         warehouse.modifyProduct(2, "Mascara", Categories.health, 5);
@@ -90,20 +90,20 @@ public class WarehouseTest {
     }
 
     @Test
-    void testCantModifyProductWithInvalidName() {
+    void cantModifyProductWithInvalidName() {
         assertThrows(IllegalArgumentException.class, () -> warehouse.modifyProduct(2, " ", Categories.health, 4));
 
     }
 
     @Test
-    void testCantModifyProductWithWithInvalidRating() {
+    void cantModifyProductWithWithInvalidRating() {
         assertThrows(IllegalArgumentException.class, () -> warehouse.modifyProduct(2, "Parfym", Categories.health, 11));
 
     }
 
 
     @Test
-    void testGetProductArr() {
+    void getProductArr() {
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
 
@@ -118,7 +118,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetProductBasedOnId() {
+    void getProductBasedOnId() {
 
         warehouse.addProduct(product1);
         warehouse.addProduct(product5);
@@ -137,7 +137,7 @@ public class WarehouseTest {
 
 
     @Test
-    void testGetProductsBasedOnCategory() {
+    void getProductsBasedOnCategory() {
 
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
@@ -161,7 +161,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetProductCreatedAfterDate() {
+    void getProductCreatedAfterDate() {
         LocalDateTime date = LocalDateTime.of(2023, 9, 3, 0, 0);
         // Products with different createdValues
         Product product1 = new Product(9, "Fotboll", Categories.sport, 5, date, LocalDateTime.now());
@@ -184,7 +184,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetProductThatBeenModified() {
+    void getProductThatBeenModified() {
 
         LocalDateTime date = LocalDateTime.of(2020, 9, 20, 20, 20);
 
@@ -208,7 +208,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetCategoriesWithProducts() {
+    void getCategoriesWithProducts() {
 
         warehouse.addProduct(product1);
         warehouse.addProduct(product5);
@@ -225,7 +225,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetHowManyProductsRelatedToCategory() {
+    void getHowManyProductsRelatedToCategory() {
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
         warehouse.addProduct(product5);
@@ -241,7 +241,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetMap() {
+    void getMap() {
         warehouse.addProduct(product1);
         warehouse.addProduct(product3);
         warehouse.addProduct(product5);
@@ -256,7 +256,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testRecentMaxRatingDontExist(){
+    void recentMaxRatingDontExist(){
 
         // Will throw exception when no max rating don't have values or not max rating
         assertThrows(NoSuchElementException.class, () -> warehouse.getRecentMaxRating());
@@ -268,7 +268,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void testGetRecentMaxRating() {
+    void getRecentMaxRating() {
 
         Product product1 = new Product(1, "Smink", Categories.health, 10, LocalDateTime.now(), LocalDateTime.now());
         Product product2 = new Product(2, "Wax", Categories.health, 10, LocalDateTime.now(), LocalDateTime.now());
@@ -282,5 +282,8 @@ public class WarehouseTest {
 
     }
 }
+
+
+
 
 
