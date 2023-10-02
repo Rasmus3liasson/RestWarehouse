@@ -1,23 +1,25 @@
 package org.laboration3.resource;
 
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.laboration3.entities.Categories;
+import org.laboration3.service.Warehouse;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Path("/products")
 public class
 Product {
 
     private List<org.laboration3.entities.Product> productsArr = new ArrayList<>();
+    @Inject
+    private Warehouse warehouse;
 
     public Product() {
         productsArr.add(new org.laboration3.entities.Product(1, "Produkt1", Categories.health, 4, LocalDateTime.now(), LocalDateTime.now()));
@@ -39,19 +41,14 @@ Product {
                 .build();
 
     }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithQuery(
             @QueryParam("start") @DefaultValue("1") int start,
-            @QueryParam("end") @DefaultValue("10") int end
+            @QueryParam("end") int end
     ) {
-        if (start <= 0 || end < start) {
-            String errorMessage = "Ej giltigt start värde";
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"" + errorMessage + "\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        }
+
 
         Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
 
@@ -59,12 +56,53 @@ Product {
 
         start = Math.min(start, total);
         end = Math.min(end, total);
-
         List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(productsArr.subList(start - 1, end));
 
+        if (start <= 0 || end < start) {
+            String errorMessage = "Ej giltigt start värde";
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"" + errorMessage + "\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
         return Response.ok(paginatedProducts, MediaType.APPLICATION_JSON).build();
     }
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getProductsWithPagination(
+            @QueryParam("size") @DefaultValue("10") int size,
+            @QueryParam("page") @DefaultValue("1") int page
+    ) {
 
+        size = (size <= 0 || page <= 0) ? 10 : size;
+
+        Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
+
+        int total = productsArr.size();
+        int start = (page - 1) * size;
+        int end = Math.min(start + size, total);
+
+        if (start < 0 || start >= total || end <= 0 || end > total || page <= 0) {
+            String errorMessage = "Den angivna värdena funkar inte";
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"" + errorMessage + "\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(productsArr.subList(start, end));
+
+
+        Map<String, Object> pagination = new HashMap<>();
+        pagination.put("page", page);
+        pagination.put("size", paginatedProducts.size());
+
+        Map<String, Object> products = new HashMap<>();
+        products.put("products", paginatedProducts);
+        products.put("pagination", pagination);
+
+        return Response.ok(products, MediaType.APPLICATION_JSON).build();
+    }
 
 
 
@@ -79,12 +117,13 @@ Product {
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-        productsArr.add(newProduct);
+        warehouse.addProduct(newProduct);
         System.out.println(productsArr);
         return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON)
                 .entity(newProduct)
                 .build();
     }
+
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)

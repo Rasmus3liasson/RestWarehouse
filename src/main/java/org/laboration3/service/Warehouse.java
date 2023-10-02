@@ -1,5 +1,6 @@
 package org.laboration3.service;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import org.laboration3.entities.Categories;
 import org.laboration3.entities.Product;
 
@@ -10,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+@ApplicationScoped
 public class Warehouse {
 
     private final List<Product> productsArr = new CopyOnWriteArrayList<>();
