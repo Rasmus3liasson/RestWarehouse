@@ -7,11 +7,12 @@ import org.laboration3.entities.Product;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class Warehouse {
 
-    private final List<Product> productsArr = new ArrayList<>();
+    private final List<Product> productsArr = new CopyOnWriteArrayList<>();
 
 
     public void addProduct(Product p) {

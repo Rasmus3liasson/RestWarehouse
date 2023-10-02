@@ -69,7 +69,7 @@ public class WarehouseTest {
         warehouse.addProduct(product3);
         warehouse.addProduct(product5);
 
-        // Product before modification
+        // org.laboration3.resource.Product before modification
         Product product3BeforeModification = warehouse.getProductsArr().get(1);
 
         warehouse.modifyProduct(2, "Mascara", Categories.health, 5);
