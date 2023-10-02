@@ -24,6 +24,7 @@ Product {
         productsArr.add(new org.laboration3.entities.Product(2, "Produkt2", Categories.health, 7, LocalDateTime.now(), LocalDateTime.now()));
         productsArr.add(new org.laboration3.entities.Product(3, "Produkt3", Categories.sport, 7, LocalDateTime.now(), LocalDateTime.now()));
 
+
     }
 
 
@@ -38,6 +39,34 @@ Product {
                 .build();
 
     }
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getProductsWithQuery(
+            @QueryParam("start") @DefaultValue("1") int start,
+            @QueryParam("end") @DefaultValue("10") int end
+    ) {
+        if (start <= 0 || end < start) {
+            String errorMessage = "Ej giltigt start värde";
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"" + errorMessage + "\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
+
+        int total = productsArr.size();
+
+        start = Math.min(start, total);
+        end = Math.min(end, total);
+
+        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(productsArr.subList(start - 1, end));
+
+        return Response.ok(paginatedProducts, MediaType.APPLICATION_JSON).build();
+    }
+
+
+
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
