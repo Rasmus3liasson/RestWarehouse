@@ -1,5 +1,6 @@
 package org.laboration3.resource;
 
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -40,7 +41,7 @@ Product {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response createProduct(org.laboration3.entities.Product product) {
+    public Response createProduct(@Valid org.laboration3.entities.Product product) {
 
         org.laboration3.entities.Product newProduct = new org.laboration3.entities.Product(product.id(),
                 product.name(),
