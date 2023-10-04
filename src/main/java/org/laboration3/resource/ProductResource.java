@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 
 @Path("/products")
 public class
-Product {
+ProductResource {
 
     private List<org.laboration3.entities.Product> productsArr = new ArrayList<>();
     @Inject
     private Warehouse warehouse;
 
-    public Product() {
+    public ProductResource() {
         productsArr.add(new org.laboration3.entities.Product(1, "Produkt1", Categories.health, 4, LocalDateTime.now(), LocalDateTime.now()));
         productsArr.add(new org.laboration3.entities.Product(2, "Produkt2", Categories.health, 7, LocalDateTime.now(), LocalDateTime.now()));
         productsArr.add(new org.laboration3.entities.Product(3, "Produkt3", Categories.sport, 7, LocalDateTime.now(), LocalDateTime.now()));
