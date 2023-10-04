@@ -5,7 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.laboration3.entities.Categories;
+import org.laboration3.entities.Product;
 import org.laboration3.service.Warehouse;
 
 import java.time.LocalDateTime;
@@ -17,29 +17,20 @@ import java.util.stream.Collectors;
 public class
 ProductResource {
 
-    private List<org.laboration3.entities.Product> productsArr = new ArrayList<>();
     @Inject
     private Warehouse warehouse;
-
-    public ProductResource() {
-        productsArr.add(new org.laboration3.entities.Product(1, "Produkt1", Categories.health, 4, LocalDateTime.now(), LocalDateTime.now()));
-        productsArr.add(new org.laboration3.entities.Product(2, "Produkt2", Categories.health, 7, LocalDateTime.now(), LocalDateTime.now()));
-        productsArr.add(new org.laboration3.entities.Product(3, "Produkt3", Categories.sport, 7, LocalDateTime.now(), LocalDateTime.now()));
-
-
-    }
 
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProducts() {
+        List<Product> productsArr = warehouse.getProductsArr();
 
-        Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
+        Collections.sort(productsArr, Comparator.comparing(Product::id));
 
         return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON)
                 .entity(productsArr)
                 .build();
-
     }
 
     @GET
@@ -50,13 +41,13 @@ ProductResource {
     ) {
 
 
-        Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
+        Collections.sort(warehouse.getProductsArr(), Comparator.comparing(org.laboration3.entities.Product::id));
 
-        int total = productsArr.size();
+        int total = warehouse.getProductsArr().size();
 
         start = Math.min(start, total);
         end = Math.min(end, total);
-        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(productsArr.subList(start - 1, end));
+        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(warehouse.getProductsArr().subList(start - 1, end));
 
         if (start <= 0 || end < start) {
             String errorMessage = "Ej giltigt start värde";
@@ -67,6 +58,7 @@ ProductResource {
         }
         return Response.ok(paginatedProducts, MediaType.APPLICATION_JSON).build();
     }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithPagination(
@@ -76,9 +68,9 @@ ProductResource {
 
         size = (size <= 0 || page <= 0) ? 10 : size;
 
-        Collections.sort(productsArr, Comparator.comparing(org.laboration3.entities.Product::id));
+        Collections.sort(warehouse.getProductsArr(), Comparator.comparing(org.laboration3.entities.Product::id));
 
-        int total = productsArr.size();
+        int total = warehouse.getProductsArr().size();
         int start = (page - 1) * size;
         int end = Math.min(start + size, total);
 
@@ -90,7 +82,7 @@ ProductResource {
                     .build();
         }
 
-        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(productsArr.subList(start, end));
+        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(warehouse.getProductsArr().subList(start, end));
 
 
         Map<String, Object> pagination = new HashMap<>();
@@ -105,7 +97,6 @@ ProductResource {
     }
 
 
-
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response createProduct(@Valid org.laboration3.entities.Product product) {
@@ -118,7 +109,7 @@ ProductResource {
                 LocalDateTime.now()
         );
         warehouse.addProduct(newProduct);
-        System.out.println(productsArr);
+        System.out.println(warehouse.getProductsArr());
         return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON)
                 .entity(newProduct)
                 .build();
@@ -129,7 +120,7 @@ ProductResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductById(@PathParam("id") int id) {
 
-        for (org.laboration3.entities.Product product : productsArr) {
+        for (org.laboration3.entities.Product product : warehouse.getProductsArr()) {
             if (product.id() == id) {
                 return Response.ok(product, MediaType.APPLICATION_JSON).build();
             }
@@ -145,7 +136,7 @@ ProductResource {
     @Path("/category/{category}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsByCategory(@PathParam("category") String category) {
-        List<org.laboration3.entities.Product> categoryProduct = productsArr.stream()
+        List<org.laboration3.entities.Product> categoryProduct = warehouse.getProductsArr().stream()
                 .filter(p -> p.category().toString().trim().equals(category.trim()))
                 .collect(Collectors.toList());
 
