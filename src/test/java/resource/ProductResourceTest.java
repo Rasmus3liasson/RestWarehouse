@@ -1,6 +1,7 @@
 package resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.ws.rs.core.Response;
@@ -24,15 +25,18 @@ import static org.mockito.Mockito.when;
 
 public class ProductResourceTest {
 
+    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
     // Method for making a representation of object
     private List<Product> objectRepresentation(Response response) throws JsonProcessingException {
 
-        // To accepts Date
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        List<Product> res = objectMapper.readValue(
-                objectMapper.writeValueAsString(response.getEntity()),
-                objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class));
-        return res;
+        String jsonRes = (String) response.getEntity();
+        // Typefactory to get the right type for my List
+        JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class);
+        // Convert to List
+        List<Product> products = objectMapper.readValue(jsonRes, productType);
+
+        return products;
 
 
     }
@@ -62,13 +66,14 @@ public class ProductResourceTest {
         Response response = productResource.getProducts();
         assertThat(Response.Status.ACCEPTED.getStatusCode()).isEqualTo(response.getStatus());
 
-        assertThat(response.getEntity()).isInstanceOf(List.class);
+        assertThat(response.getEntity()).isInstanceOf(String.class);
 
         List<Product> products = objectRepresentation(response);
 
+
         assertThat(products).isNotEmpty();
         assertThat(products).isSortedAccordingTo(Comparator.comparing(Product::id));
-        assertThat(products).size().isEqualTo(2);
+        assertThat(products).hasSize(2);
         assertThat(products.get(0).name()).isEqualTo("Produkt1");
     }
 
@@ -81,7 +86,7 @@ public class ProductResourceTest {
 
         when(warehouse.getProductsArr()).thenReturn(mockedProducts);
 
-        Response response = productResource.getProductsWithQuery(1,3);
+        Response response = productResource.getProductsWithQuery(1, 3);
 
         List<Product> products = objectRepresentation(response);
 
@@ -89,6 +94,10 @@ public class ProductResourceTest {
         assertThat(products).size().isEqualTo(3);
         assertThat(products.get(2).id()).isEqualTo(5);
     }
+
+
+
+
 
    /*@Test
     public void getProductsWithPagination() {

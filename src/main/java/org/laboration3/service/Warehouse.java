@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.laboration3.entities.Categories;
 import org.laboration3.entities.Product;
 
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -15,7 +14,6 @@ import java.util.stream.Collectors;
 public class Warehouse {
 
     private final List<Product> productsArr = new CopyOnWriteArrayList<>();
-
 
     public void addProduct(Product p) {
         // Check if name is not an empty string and if id already exist

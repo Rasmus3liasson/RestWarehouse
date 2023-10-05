@@ -1,5 +1,9 @@
 package org.laboration3.resource;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -20,26 +24,37 @@ ProductResource {
     @Inject
     private Warehouse warehouse;
 
+    private final ObjectMapper objectMapper;
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getProducts() {
-        List<Product> productsArr = warehouse.getProductsArr();
+    public ProductResource() {
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule())
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-        Collections.sort(productsArr, Comparator.comparing(Product::id));
-
-        return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON)
-                .entity(productsArr)
-                .build();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    public Response getProducts() throws JsonProcessingException {
+
+        List<Product> productsArr = warehouse.getProductsArr();
+
+        Collections.sort(productsArr, Comparator.comparing(Product::id));
+
+        return Response.status(Response.Status.ACCEPTED)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(objectMapper.writeValueAsString(productsArr))
+                .build();
+
+    }
+
+    @GET
+    @Path("/query")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithQuery(
             @QueryParam("start") @DefaultValue("1") int start,
             @QueryParam("end") int end
-    ) {
-
+    ) throws JsonProcessingException {
 
         Collections.sort(warehouse.getProductsArr(), Comparator.comparing(org.laboration3.entities.Product::id));
 
@@ -56,34 +71,43 @@ ProductResource {
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
-        return Response.ok(paginatedProducts, MediaType.APPLICATION_JSON).build();
+        return Response.ok(objectMapper.writeValueAsString(paginatedProducts), MediaType.APPLICATION_JSON).build();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithPagination(
-            @QueryParam("size") @DefaultValue("10") int size,
-            @QueryParam("page") @DefaultValue("1") int page
-    ) {
+            @QueryParam("size") @DefaultValue("-1") int size,
+            @QueryParam("page") @DefaultValue("-1") int page
+    ) throws JsonProcessingException {
+        List<Product> allProducts = warehouse.getProductsArr();
 
-        size = (size <= 0 || page <= 0) ? 10 : size;
-
-        Collections.sort(warehouse.getProductsArr(), Comparator.comparing(org.laboration3.entities.Product::id));
-
-        int total = warehouse.getProductsArr().size();
-        int start = (page - 1) * size;
-        int end = Math.min(start + size, total);
-
-        if (start < 0 || start >= total || end <= 0 || end > total || page <= 0) {
-            String errorMessage = "Den angivna värdena funkar inte";
+        if (allProducts.isEmpty()) {
+            String errorMessage = "Inga produkter finns";
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"error\": \"" + errorMessage + "\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
 
-        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(warehouse.getProductsArr().subList(start, end));
+        int total = allProducts.size();
+        int start;
+        int end;
 
+        if (page <= 0) {
+
+            start = 0;
+            end = total;
+            page = 1;
+        } else {
+            size = (size == -1) ? 10 : size;
+            start = (page - 1) * size;
+            end = Math.min(start + size, total);
+        }
+
+        List<Product> paginatedProducts = new ArrayList<>(allProducts.subList(start, end));
+
+        Collections.sort(paginatedProducts, Comparator.comparing(Product::id));
 
         Map<String, Object> pagination = new HashMap<>();
         pagination.put("page", page);
@@ -93,15 +117,14 @@ ProductResource {
         products.put("products", paginatedProducts);
         products.put("pagination", pagination);
 
-        return Response.ok(products, MediaType.APPLICATION_JSON).build();
+        return Response.ok(objectMapper.writeValueAsString(products), MediaType.APPLICATION_JSON).build();
     }
-
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response createProduct(@Valid org.laboration3.entities.Product product) {
-
-        org.laboration3.entities.Product newProduct = new org.laboration3.entities.Product(product.id(),
+    public Response createProduct(@Valid org.laboration3.entities.Product product) throws JsonProcessingException {
+        org.laboration3.entities.Product newProduct = new org.laboration3.entities.Product(
+                product.id(),
                 product.name(),
                 product.category(),
                 product.rating(),
@@ -109,9 +132,9 @@ ProductResource {
                 LocalDateTime.now()
         );
         warehouse.addProduct(newProduct);
-        System.out.println(warehouse.getProductsArr());
-        return Response.status(Response.Status.CREATED).type(MediaType.APPLICATION_JSON)
-                .entity(newProduct)
+        return Response.status(Response.Status.CREATED)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(objectMapper.writeValueAsString(newProduct))
                 .build();
     }
 
