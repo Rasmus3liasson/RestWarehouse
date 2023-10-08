@@ -54,8 +54,7 @@ public class Warehouse {
         );
     }
 
-    public List<Product> getProductsArr() {
-        return new ArrayList<>(productsArr);
+    public List<Product> getProductsArr() {return new ArrayList<>(productsArr);
     }
 
     public List<Product> getProductBasedOnId(int id) {

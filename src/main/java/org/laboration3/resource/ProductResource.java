@@ -30,13 +30,11 @@ ProductResource {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule())
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProducts() throws JsonProcessingException {
-
         List<Product> productsArr = warehouse.getProductsArr();
 
         Collections.sort(productsArr, Comparator.comparing(Product::id));
@@ -141,11 +139,11 @@ ProductResource {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getProductById(@PathParam("id") int id) {
+    public Response getProductById(@PathParam("id") int id) throws JsonProcessingException {
 
         for (org.laboration3.entities.Product product : warehouse.getProductsArr()) {
             if (product.id() == id) {
-                return Response.ok(product, MediaType.APPLICATION_JSON).build();
+                return Response.ok( objectMapper.writeValueAsString(product), MediaType.APPLICATION_JSON).build();
             }
         }
 
@@ -158,7 +156,7 @@ ProductResource {
     @GET
     @Path("/category/{category}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getProductsByCategory(@PathParam("category") String category) {
+    public Response getProductsByCategory(@PathParam("category") String category) throws JsonProcessingException {
         List<org.laboration3.entities.Product> categoryProduct = warehouse.getProductsArr().stream()
                 .filter(p -> p.category().toString().trim().equals(category.trim()))
                 .collect(Collectors.toList());
@@ -171,7 +169,7 @@ ProductResource {
                     .build();
         }
 
-        return Response.ok(categoryProduct, MediaType.APPLICATION_JSON).build();
+        return Response.ok(objectMapper.writeValueAsString(categoryProduct), MediaType.APPLICATION_JSON).build();
     }
 
 }
