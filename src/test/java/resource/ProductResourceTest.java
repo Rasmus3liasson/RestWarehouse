@@ -29,6 +29,7 @@ public class ProductResourceTest {
 
     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
+
     // Method for making a representation of object with both List and singel products
     private List<Product> objectRepresentation(Response response) throws JsonProcessingException {
         String jsonRes = (String) response.getEntity();
@@ -163,7 +164,6 @@ public class ProductResourceTest {
 
         assertThat(mockedProducts.contains(createdProduct));
     }
-
 
 
     private static List<Product> MockedProducts() {

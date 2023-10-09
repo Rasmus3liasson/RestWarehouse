@@ -5,12 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
+import jakarta.interceptor.Interceptors;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.laboration3.Interceptor.Logging;
 import org.laboration3.entities.Product;
 import org.laboration3.service.Warehouse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -18,6 +22,7 @@ import java.util.stream.Collectors;
 
 
 @Path("/products")
+@Interceptors(Logging.class)
 public class
 ProductResource {
 
@@ -25,6 +30,7 @@ ProductResource {
     private Warehouse warehouse;
 
     private final ObjectMapper objectMapper;
+    private final static Logger logger = LoggerFactory.getLogger(ProductResource.class);
 
     public ProductResource() {
         objectMapper = new ObjectMapper();
@@ -36,6 +42,10 @@ ProductResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProducts() throws JsonProcessingException {
         List<Product> productsArr = warehouse.getProductsArr();
+
+        if (productsArr.isEmpty()) {
+            throw new NotFoundException("Inga produkter finns tillgängliga");
+        }
 
         Collections.sort(productsArr, Comparator.comparing(Product::id));
 
@@ -63,11 +73,7 @@ ProductResource {
         List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(warehouse.getProductsArr().subList(start - 1, end));
 
         if (start <= 0 || end < start) {
-            String errorMessage = "Ej giltigt start värde";
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"" + errorMessage + "\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
+            throw new BadRequestException("Ej giltigt start värde");
         }
         return Response.ok(objectMapper.writeValueAsString(paginatedProducts), MediaType.APPLICATION_JSON).build();
     }
@@ -81,11 +87,7 @@ ProductResource {
         List<Product> allProducts = warehouse.getProductsArr();
 
         if (allProducts.isEmpty()) {
-            String errorMessage = "Inga produkter finns";
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"" + errorMessage + "\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
+            throw new BadRequestException("Inga produkter finns");
         }
 
         int total = allProducts.size();
@@ -130,6 +132,7 @@ ProductResource {
                 LocalDateTime.now()
         );
         warehouse.addProduct(newProduct);
+        logger.info("Produkt " + newProduct + " skapades.");
         return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(objectMapper.writeValueAsString(newProduct))
@@ -143,14 +146,11 @@ ProductResource {
 
         for (org.laboration3.entities.Product product : warehouse.getProductsArr()) {
             if (product.id() == id) {
-                return Response.ok( objectMapper.writeValueAsString(product), MediaType.APPLICATION_JSON).build();
+                return Response.ok(objectMapper.writeValueAsString(product), MediaType.APPLICATION_JSON).build();
             }
         }
 
-        String errorMessage = "Finns ingen product med id: " + id;
-        return Response.status(Response.Status.NOT_FOUND).entity("{\"error\": \"" + errorMessage + "\"}")
-                .type(MediaType.APPLICATION_JSON)
-                .build();
+        throw new NotFoundException("Finns ingen product med id: " + id);
     }
 
     @GET
@@ -162,11 +162,7 @@ ProductResource {
                 .collect(Collectors.toList());
 
         if (categoryProduct.isEmpty()) {
-            String errorMessage = "Inga produkter hittades i kategorin: " + category;
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("{\"error\": \"" + errorMessage + "\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
+          throw new NotFoundException("Inga produkter hittades i kategorin: " + category);
         }
 
         return Response.ok(objectMapper.writeValueAsString(categoryProduct), MediaType.APPLICATION_JSON).build();
