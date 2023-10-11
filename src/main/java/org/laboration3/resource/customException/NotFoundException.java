@@ -1,4 +1,4 @@
-package org.laboration3.resource.custonException;
+package org.laboration3.resource.customException;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;

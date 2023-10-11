@@ -1,4 +1,4 @@
-package org.laboration3.resource.custonException;
+package org.laboration3.resource.customException;
 
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;

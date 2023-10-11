@@ -64,21 +64,23 @@ ProductResource {
             @QueryParam("end") int end
     ) throws JsonProcessingException {
 
-        Collections.sort(warehouse.getProductsArr(), Comparator.comparing(org.laboration3.entities.Product::id));
-
-        int total = warehouse.getProductsArr().size();
-
-        start = Math.min(start, total);
-        end = Math.min(end, total);
-        List<org.laboration3.entities.Product> paginatedProducts = new ArrayList<>(warehouse.getProductsArr().subList(start - 1, end));
+        List<org.laboration3.entities.Product> paginatedProducts = warehouse.getProductsArr()
+                .stream()
+                .filter(p -> p.id() >= start && p.id() <= end)
+                .sorted(Comparator.comparing(Product::id))
+                .toList();
 
         if (start <= 0 || end < start) {
             throw new BadRequestException("Ej giltigt start värde");
+        } else if (paginatedProducts.isEmpty()) {
+            throw new NotFoundException("Finns inga produkter med dessa id:n");
         }
+
         return Response.ok(objectMapper.writeValueAsString(paginatedProducts), MediaType.APPLICATION_JSON).build();
     }
 
     @GET
+    @Path("/pagination")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithPagination(
             @QueryParam("size") @DefaultValue("-1") int size,
@@ -162,7 +164,7 @@ ProductResource {
                 .collect(Collectors.toList());
 
         if (categoryProduct.isEmpty()) {
-          throw new NotFoundException("Inga produkter hittades i kategorin: " + category);
+            throw new NotFoundException("Inga produkter hittades i kategorin: " + category);
         }
 
         return Response.ok(objectMapper.writeValueAsString(categoryProduct), MediaType.APPLICATION_JSON).build();
