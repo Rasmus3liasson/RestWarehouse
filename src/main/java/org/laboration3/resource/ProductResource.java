@@ -2,8 +2,6 @@ package org.laboration3.resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptors;
 import jakarta.validation.Valid;
@@ -33,9 +31,7 @@ ProductResource {
     private final static Logger logger = LoggerFactory.getLogger(ProductResource.class);
 
     public ProductResource() {
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule())
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        objectMapper = ObjectMapperConvertDate.configureObjectMapper();
     }
 
     @GET
@@ -64,7 +60,7 @@ ProductResource {
             @QueryParam("end") int end
     ) throws JsonProcessingException {
 
-        List<org.laboration3.entities.Product> paginatedProducts = warehouse.getProductsArr()
+        List<Product> paginatedProducts = warehouse.getProductsArr()
                 .stream()
                 .filter(p -> p.id() >= start && p.id() <= end)
                 .sorted(Comparator.comparing(Product::id))
@@ -124,8 +120,8 @@ ProductResource {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response createProduct(@Valid org.laboration3.entities.Product product) throws JsonProcessingException {
-        org.laboration3.entities.Product newProduct = new org.laboration3.entities.Product(
+    public Response createProduct(@Valid Product product) throws JsonProcessingException {
+       Product newProduct = new org.laboration3.entities.Product(
                 product.id(),
                 product.name(),
                 product.category(),
@@ -145,21 +141,20 @@ ProductResource {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductById(@PathParam("id") int id) throws JsonProcessingException {
+        List<Product> productById = warehouse.getProductBasedOnId(id);
 
-        for (org.laboration3.entities.Product product : warehouse.getProductsArr()) {
-            if (product.id() == id) {
-                return Response.ok(objectMapper.writeValueAsString(product), MediaType.APPLICATION_JSON).build();
-            }
+        if (productById.isEmpty()) {
+            throw new NotFoundException("Finns ingen product med id: " + id);
         }
 
-        throw new NotFoundException("Finns ingen product med id: " + id);
+        return Response.ok(objectMapper.writeValueAsString(productById.get(0)), MediaType.APPLICATION_JSON).build();
     }
 
     @GET
     @Path("/category/{category}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsByCategory(@PathParam("category") String category) throws JsonProcessingException {
-        List<org.laboration3.entities.Product> categoryProduct = warehouse.getProductsArr().stream()
+        List<Product> categoryProduct = warehouse.getProductsArr().stream()
                 .filter(p -> p.category().toString().trim().equals(category.trim()))
                 .collect(Collectors.toList());
 

@@ -61,10 +61,6 @@ public class Warehouse {
         List<Product> productById = productsArr.stream()
                 .filter(p -> p.id() == id).toList();
 
-        if (productById.isEmpty()) {
-            throw new NoSuchElementException("Finns ingen produkt med detta id");
-        }
-
         return productById;
     }
 

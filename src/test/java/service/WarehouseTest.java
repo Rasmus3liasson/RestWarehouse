@@ -128,12 +128,9 @@ public class WarehouseTest {
         assertThat(idList).containsOnly(product5);
 
 
-        assertThrows(NoSuchElementException.class, () -> {
-            warehouse.getProductBasedOnId(9);
-
-        });
-
     }
+
+    ;
 
 
     @Test
@@ -256,7 +253,7 @@ public class WarehouseTest {
     }
 
     @Test
-    void recentMaxRatingDontExist(){
+    void recentMaxRatingDontExist() {
 
         // Will throw exception when no max rating don't have values or not max rating
         assertThrows(NoSuchElementException.class, () -> warehouse.getRecentMaxRating());

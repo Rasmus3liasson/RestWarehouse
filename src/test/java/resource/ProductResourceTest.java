@@ -4,8 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.mock.MockDispatcherFactory;
 import org.jboss.resteasy.mock.MockHttpRequest;
@@ -15,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.laboration3.entities.Categories;
 import org.laboration3.entities.Product;
+import org.laboration3.resource.ObjectMapperConvertDate;
+import org.laboration3.resource.ProductResource;
 import org.laboration3.service.Warehouse;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -29,14 +30,14 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 
 public class ProductResourceTest {
 
-    ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+    private final ObjectMapper objectMapper = ObjectMapperConvertDate.configureObjectMapper();
 
     private Dispatcher dispatcher;
 
@@ -58,13 +59,13 @@ public class ProductResourceTest {
     }
 
     @InjectMocks
-    private org.laboration3.resource.ProductResource productResource;
+    private ProductResource productResource;
 
     @Mock
     private Warehouse warehouse;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws JsonProcessingException {
         MockitoAnnotations.initMocks(this);
         dispatcher = MockDispatcherFactory.createDispatcher();
         dispatcher.getRegistry().addSingletonResource(productResource);
@@ -79,6 +80,7 @@ public class ProductResourceTest {
 
         dispatcher.invoke(req, res);
 
+        assertThrows(NotFoundException.class, () -> productResource.getProducts());
         assertThat(res.getStatus()).isEqualTo(404);
         assertThat(res.getOutput()).isNotNull();
     }
@@ -99,7 +101,7 @@ public class ProductResourceTest {
 
     @Test
     public void productWithId() throws URISyntaxException, UnsupportedEncodingException, JsonProcessingException {
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
+        when(warehouse.getProductBasedOnId(2)).thenReturn(Collections.singletonList(MockedProducts().get(1)));
 
         MockHttpRequest req = MockHttpRequest.get("/products/2");
         MockHttpResponse res = new MockHttpResponse();
@@ -178,7 +180,7 @@ public class ProductResourceTest {
         String products = res.getContentAsString();
         assertThat(products).isNotNull();
 
-        JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, org.laboration3.entities.Product.class);
+        JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class);
         List<Product> convertProducts = objectMapper.readValue(products, productType);
 
         assertThat(convertProducts).isNotEmpty();
@@ -189,7 +191,7 @@ public class ProductResourceTest {
                 .doesNotContain(Categories.sport);
 
     }
-    
+
 
     // Testing methods
     @Test
@@ -243,21 +245,6 @@ public class ProductResourceTest {
         assertThat(productsTotal).isEqualTo(3);
         assertThat(productsTotal).isEqualTo(sizePagination);
 
-    }
-
-
-    @Test
-    public void getProductById() throws JsonProcessingException {
-
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
-
-        Response response = productResource.getProductById(2);
-        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-        List<Product> products = objectRepresentation(response);
-
-        assertThat(products.get(0).id()).isEqualTo(2);
-        assertThat(products).hasSize(1);
     }
 
     @Test
