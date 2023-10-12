@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.mock.MockDispatcherFactory;
 import org.jboss.resteasy.mock.MockHttpRequest;
 import org.jboss.resteasy.mock.MockHttpResponse;
@@ -30,21 +30,25 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 
 public class ProductResourceTest {
 
 
-    private final ObjectMapper objectMapper = ObjectMapperConvertDate.configureObjectMapper();
+    private ObjectMapper objectMapper = ObjectMapperConvertDate.configureObjectMapper();
 
     private Dispatcher dispatcher;
 
 
     // Method for making a representation of object with both List and singel products
-    private List<Product> objectRepresentation(Response response) throws JsonProcessingException {
-        String jsonRes = (String) response.getEntity();
+    private List<Product> objectRepresentation(MockHttpResponse res) throws JsonProcessingException, UnsupportedEncodingException {
+        String jsonRes = res.getContentAsString();
         try {
             // List
             JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class);
@@ -55,7 +59,6 @@ public class ProductResourceTest {
             Product product = objectMapper.readValue(jsonRes, Product.class);
             return Collections.singletonList(product);
         }
-
     }
 
     @InjectMocks
@@ -69,6 +72,7 @@ public class ProductResourceTest {
         MockitoAnnotations.initMocks(this);
         dispatcher = MockDispatcherFactory.createDispatcher();
         dispatcher.getRegistry().addSingletonResource(productResource);
+        dispatcher.getProviderFactory().registerProvider(MyObjectMapperContextResolver.class);
     }
 
     @Test
@@ -86,7 +90,7 @@ public class ProductResourceTest {
     }
 
     @Test
-    public void productsAvailable() throws URISyntaxException {
+    public void productsAvailable() throws URISyntaxException, JsonProcessingException, UnsupportedEncodingException {
         when(warehouse.getProductsArr()).thenReturn(MockedProducts());
 
         MockHttpRequest req = MockHttpRequest.get("/products");
@@ -95,9 +99,32 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
 
         assertThat(res.getStatus()).isEqualTo(202);
-        assertThat(res.getOutput()).isNotNull();
 
+        List<Product> products = objectRepresentation(res);
+
+        assertThat(products).isNotEmpty();
+        assertThat(products.get(0).id()).isEqualTo(1);
+        assertThat(products).isNotEmpty();
+        assertThat(products).isSortedAccordingTo(Comparator.comparing(Product::id));
+        assertThat(products).hasSize(4);
+        assertThat(products.get(0).name()).isEqualTo("Produkt1");
     }
+
+
+    @Test
+    public void wrongIdParameter() throws URISyntaxException {
+        when(warehouse.getProductBasedOnId(anyInt())).thenReturn(Collections.emptyList());
+
+        MockHttpRequest req = MockHttpRequest.get("/products/9");
+        MockHttpResponse res = new MockHttpResponse();
+
+
+        dispatcher.invoke(req, res);
+
+        assertThat(res.getStatus()).isEqualTo(404);
+        assertThrows(NotFoundException.class, () -> productResource.getProductById(2));
+    }
+
 
     @Test
     public void productWithId() throws URISyntaxException, UnsupportedEncodingException, JsonProcessingException {
@@ -109,15 +136,34 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
         assertThat(res.getStatus()).isEqualTo(200);
 
-        String product = res.getContentAsString();
-        assertThat(product).isNotNull();
 
-        Product convertProduct = objectMapper.readValue(product, Product.class);
-        assertThat(convertProduct.id()).isEqualTo(2);
-        assertThat(convertProduct.name()).isEqualTo("Produkt2");
-        assertThat(convertProduct.category()).isEqualTo(Categories.health);
-        assertThat(convertProduct.rating()).isEqualTo(7);
+        List<Product> product = objectRepresentation(res);
+        assertThat(product).isNotNull();
+        assertThat(product.size()).isEqualTo(1);
+        assertThat(product.size()).isLessThan(2);
+        assertThat(product.get(0).id()).isEqualTo(2);
+        assertThat(product.get(0).name()).isEqualTo("Produkt2");
+        assertThat(product.get(0).category()).isEqualTo(Categories.health);
+        assertThat(product.get(0).rating()).isEqualTo(7);
+
+
     }
+
+    @Test
+    public void usingInvalidTotalQueries() throws Exception {
+
+        when(warehouse.getProductsArr()).thenReturn(Collections.emptyList());
+
+
+        MockHttpRequest req = MockHttpRequest.get("/products/query?start=3&end=2");
+        MockHttpResponse res = new MockHttpResponse();
+        dispatcher.invoke(req, res);
+
+
+        assertThat(res.getStatus()).isEqualTo(400);
+        assertThrows(BadRequestException.class, () -> productResource.getProductsWithQuery(3, 2));
+    }
+
 
     @Test
     public void usingQueryTotalProducts() throws URISyntaxException, UnsupportedEncodingException, JsonProcessingException {
@@ -141,6 +187,21 @@ public class ProductResourceTest {
         assertThat(convertProducts.get(2).id()).isEqualTo(4);
         assertThat(convertProducts).extracting(Product::id).doesNotContain(1);
 
+    }
+
+    @Test
+    public void usingWrongPaginationQueries() throws Exception {
+        when(warehouse.getProductsArr()).thenReturn(Collections.emptyList());
+
+        MockHttpRequest req = MockHttpRequest.get("/products/pagination?size=10&page=1");
+        MockHttpResponse res = new MockHttpResponse();
+
+        dispatcher.invoke(req, res);
+
+
+        assertThat(res.getStatus()).isEqualTo(400);
+
+        assertThrows(BadRequestException.class, () -> productResource.getProductsWithPagination(2, 3));
     }
 
     @Test
@@ -168,6 +229,22 @@ public class ProductResourceTest {
     }
 
     @Test
+    public void usingWrongCategoryQuery() throws Exception {
+        when(warehouse.getProductBasedOnCategory(Categories.sport)).thenReturn(Collections.emptyList());
+
+        MockHttpRequest req = MockHttpRequest.get("/products/category/majs");
+        MockHttpResponse res = new MockHttpResponse();
+
+        dispatcher.invoke(req, res);
+
+
+        assertThat(res.getStatus()).isEqualTo(404);
+
+        assertThrows(NotFoundException.class, () -> productResource.getProductsByCategory(String.valueOf(Categories.health)));
+    }
+
+
+    @Test
     public void usingCategoryFiltering() throws URISyntaxException, UnsupportedEncodingException, JsonProcessingException {
 
         when(warehouse.getProductsArr()).thenReturn(MockedProducts());
@@ -192,98 +269,30 @@ public class ProductResourceTest {
 
     }
 
-
-    // Testing methods
     @Test
-    public void getProducts() throws Exception {
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
-
-        Response response = productResource.getProducts();
-        assertThat(Response.Status.ACCEPTED.getStatusCode()).isEqualTo(response.getStatus());
-
-        assertThat(response.getEntity()).isInstanceOf(String.class);
-
-        List<Product> products = objectRepresentation(response);
-
-
-        assertThat(products).isNotEmpty();
-        assertThat(products).isSortedAccordingTo(Comparator.comparing(Product::id));
-        assertThat(products).hasSize(4);
-        assertThat(products.get(0).name()).isEqualTo("Produkt1");
-    }
-
-    @Test
-    public void getProductsWithQuery() throws JsonProcessingException {
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
-
-        Response response = productResource.getProductsWithQuery(1, 3);
-        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-        List<Product> products = objectRepresentation(response);
-
-        assertThat(products).isNotEmpty();
-        assertThat(products).size().isEqualTo(3);
-        assertThat(products.get(2).id()).isEqualTo(3);
-    }
-
-
-    @Test
-    public void getProductsWithPagination() throws JsonProcessingException {
-
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
-
-
-        Response response = productResource.getProductsWithPagination(3, 1);
-        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-        // Read JSON data
-        JsonNode jsonRes = objectMapper.readTree((String) response.getEntity());
-
-        int productsTotal = jsonRes.get("products").size();
-        int sizePagination = jsonRes.get("pagination").get("size").asInt();
-
-        assertThat(productsTotal).isEqualTo(3);
-        assertThat(productsTotal).isEqualTo(sizePagination);
-
-    }
-
-    @Test
-    public void getProductsByCategory() throws JsonProcessingException {
-
-        when(warehouse.getProductsArr()).thenReturn(MockedProducts());
-
-        Response response = productResource.getProductsByCategory("health");
-        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-
-        List<Product> products = objectRepresentation(response);
-
-        assertThat(products).hasSize(3);
-
-        for (Product product : products) {
-            assertThat(product.category()).isEqualTo(Categories.health);
-        }
-    }
-
-    @Test
-    public void createProduct() throws JsonProcessingException {
-        // Create the new product
-        Product newProduct = new Product(6, "Ny Produkt", Categories.sport, 7, LocalDateTime.now(), LocalDateTime.now());
-
-        // Manually adding the product
+    public void postProduct() throws Exception {
         List<Product> mockedProducts = MockedProducts();
-        mockedProducts.add(newProduct);
+
+        Product newProduct = new Product(8, "NyProdukt", Categories.sport, 5, LocalDateTime.now(), LocalDateTime.now());
+
+        doAnswer(invoke -> {
+            Product product = invoke.getArgument(0);
+            mockedProducts.add(product);
+            return null;
+        }).when(warehouse).addProduct(any());
+
         when(warehouse.getProductsArr()).thenReturn(mockedProducts);
 
-        Response response = productResource.createProduct(newProduct);
+        MockHttpRequest req = MockHttpRequest.post("/products");
+        req.contentType("application/json");
+        req.content(objectMapper.writeValueAsString(newProduct).getBytes());
+        MockHttpResponse res = new MockHttpResponse();
 
+        dispatcher.invoke(req, res);
+        assertEquals(201, res.getStatus());
 
-        assertThat(response.getStatus()).isEqualTo(Response.Status.CREATED.getStatusCode());
-        // Read Json data
-        Product createdProduct = objectMapper.readValue((String) response.getEntity(), Product.class);
-
-        assertThat(createdProduct).isEqualToIgnoringGivenFields(newProduct, "createdDate", "lastModifiedDate");
-
-        assertThat(mockedProducts.contains(createdProduct));
+        assertThat(warehouse.getProductsArr().size()).isEqualTo(5);
+        assertThat(warehouse.getProductsArr().getLast()).isEqualToIgnoringGivenFields(newProduct, "createdDate", "lastModifiedDate");
     }
 
 
