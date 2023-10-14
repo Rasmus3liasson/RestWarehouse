@@ -1,4 +1,4 @@
-package org.laboration3.resource;
+package org.laboration3.resource.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.laboration3.Interceptor.Logging;
 import org.laboration3.entities.Product;
+import org.laboration3.resource.utils.ObjectMapperConvertDate;
 import org.laboration3.service.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ ProductResource {
     }
 
     @GET
-    @Path("/query")
+    @Path("/filter/size")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getProductsWithQuery(
             @QueryParam("start") @DefaultValue("1") int start,

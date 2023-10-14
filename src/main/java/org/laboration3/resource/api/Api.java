@@ -1,4 +1,4 @@
-package org.laboration3.resource;
+package org.laboration3.resource.api;
 
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;

@@ -1,4 +1,4 @@
-package org.laboration3.resource;
+package org.laboration3.resource.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

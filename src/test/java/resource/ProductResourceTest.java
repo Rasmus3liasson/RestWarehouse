@@ -14,8 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.laboration3.entities.Categories;
 import org.laboration3.entities.Product;
-import org.laboration3.resource.ObjectMapperConvertDate;
-import org.laboration3.resource.ProductResource;
+import org.laboration3.resource.utils.ObjectMapperConvertDate;
+import org.laboration3.resource.api.ProductResource;
 import org.laboration3.service.Warehouse;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -68,7 +68,7 @@ public class ProductResourceTest {
     private Warehouse warehouse;
 
     @BeforeEach
-    public void setUp() throws JsonProcessingException {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         dispatcher = MockDispatcherFactory.createDispatcher();
         dispatcher.getRegistry().addSingletonResource(productResource);
@@ -155,7 +155,7 @@ public class ProductResourceTest {
         when(warehouse.getProductsArr()).thenReturn(Collections.emptyList());
 
 
-        MockHttpRequest req = MockHttpRequest.get("/products/query?start=3&end=2");
+        MockHttpRequest req = MockHttpRequest.get("/products/filter/size?start=3&end=2");
         MockHttpResponse res = new MockHttpResponse();
         dispatcher.invoke(req, res);
 
@@ -169,7 +169,7 @@ public class ProductResourceTest {
     public void usingQueryTotalProducts() throws URISyntaxException, UnsupportedEncodingException, JsonProcessingException {
         when(warehouse.getProductsArr()).thenReturn(MockedProducts());
 
-        MockHttpRequest req = MockHttpRequest.get("/products/query?start=2&&end=4");
+        MockHttpRequest req = MockHttpRequest.get("/products/filter/size?start=2&&end=4");
         MockHttpResponse res = new MockHttpResponse();
 
         dispatcher.invoke(req, res);
@@ -210,9 +210,6 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
 
         assertThat(res.getStatus()).isEqualTo(200);
-
-        System.out.println(res.getContentAsString());
-
 
         String response = res.getContentAsString();
         JsonNode jsonRes = objectMapper.readTree(response);
