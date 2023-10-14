@@ -72,7 +72,7 @@ public class ProductResourceTest {
         MockitoAnnotations.initMocks(this);
         dispatcher = MockDispatcherFactory.createDispatcher();
         dispatcher.getRegistry().addSingletonResource(productResource);
-        dispatcher.getProviderFactory().registerProvider(MyObjectMapperContextResolver.class);
+        dispatcher.getProviderFactory().registerProvider(ObjectMapperConvertDate.class);
     }
 
     @Test
@@ -175,17 +175,13 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
         assertThat(res.getStatus()).isEqualTo(200);
 
-        String products = res.getContentAsString();
-        assertThat(products).isNotNull();
+        List<Product> products = objectRepresentation(res);
 
-        JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class);
-        List<Product> convertProducts = objectMapper.readValue(products, productType);
+        assertThat(products.size()).isEqualTo(3);
 
-        assertThat(convertProducts.size()).isEqualTo(3);
-
-        assertThat(convertProducts.get(0).id()).isEqualTo(2);
-        assertThat(convertProducts.get(2).id()).isEqualTo(4);
-        assertThat(convertProducts).extracting(Product::id).doesNotContain(1);
+        assertThat(products.get(0).id()).isEqualTo(2);
+        assertThat(products.get(2).id()).isEqualTo(4);
+        assertThat(products).extracting(Product::id).doesNotContain(1);
 
     }
 
@@ -215,8 +211,12 @@ public class ProductResourceTest {
 
         assertThat(res.getStatus()).isEqualTo(200);
 
+        System.out.println(res.getContentAsString());
+
+
         String response = res.getContentAsString();
         JsonNode jsonRes = objectMapper.readTree(response);
+
 
         JsonNode pagination = jsonRes.get("pagination");
         assertThat(pagination).isNotNull();
@@ -226,6 +226,7 @@ public class ProductResourceTest {
         JsonNode products = jsonRes.get("products");
         assertThat(products).isNotNull();
         assertThat(products.size()).isEqualTo(2);
+
     }
 
     @Test
@@ -253,12 +254,9 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
 
         assertThat(res.getStatus()).isEqualTo(200);
+        assertThat(res).isNotNull();
 
-        String products = res.getContentAsString();
-        assertThat(products).isNotNull();
-
-        JavaType productType = objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class);
-        List<Product> convertProducts = objectMapper.readValue(products, productType);
+        List<Product> convertProducts = objectRepresentation(res);
 
         assertThat(convertProducts).isNotEmpty();
         assertThat(convertProducts.size()).isEqualTo(3);
