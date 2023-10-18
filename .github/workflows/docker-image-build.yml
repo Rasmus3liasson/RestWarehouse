@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - name: Checks code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup Java
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
        distribution: 'temurin'
        java-version: "21" 
@@ -33,7 +33,8 @@ jobs:
       run: docker login -u ${{ secrets.USERNAME_DOCKERHUB }} -p ${{ secrets.PASSWORD_DOCKERHUB }}
 
     - name: Pull Image
-      run: docker pull ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:latest
+      # Pull custom image from Dockerhub
+      run: docker pull ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image
 
     - name: Build and Push new image
       # Git log/hash for new image to easily know what code image specifies
