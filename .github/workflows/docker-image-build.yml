@@ -1,0 +1,47 @@
+name: docker-image-build
+
+on:
+  push:
+    branches:
+      - master
+      - testWorkflow
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checks code
+      uses: actions/checkout@v2
+
+    - name: Version/language setup
+      uses: actions/setup-java@v2
+      with:
+        java-version: '21'
+
+    - name: Build
+      run: |
+        ./mvnw clean install
+      working-directory: .
+
+    - name: Test
+      run: |
+        ./mvnw test
+      working-directory: .
+
+    - name: Login
+      run: docker login -u ${{ secrets.USERNAME_DOCKERHUB }} -p ${{ secrets.PASSWORD_DOCKERHUB }}
+
+    - name: Pull Image
+      run: docker pull ${secrets.USERNAME_DOCKERHUB}/wildfly-image:latest
+
+    - name: Date & Time
+      id: date
+      run: echo "::set-output name=time::$(date +'%Y%m%d%H%M%S')"
+
+    - name: Build and Push new image
+      run: |
+        TIME=${{ steps.date.outputs.time }}
+        docker build -t ${secrets.USERNAME_DOCKERHUB}/wildfly-image:${TIME} .
+        docker push ${secrets.USERNAME_DOCKERHUB}/wildfly-image:${TIME}
