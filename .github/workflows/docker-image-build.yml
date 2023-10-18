@@ -22,12 +22,12 @@ jobs:
 
     - name: Build
       run: |
-        ./mvnw clean install
+        ./mvn clean install
       working-directory: .
 
     - name: Test
       run: |
-        ./mvnw test
+        ./mvn test
       working-directory: .
 
     - name: Login
