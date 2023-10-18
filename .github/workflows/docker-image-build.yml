@@ -15,33 +15,31 @@ jobs:
     - name: Checks code
       uses: actions/checkout@v3
 
-    - name: Version/language setup
+    - name: Setup Java
       uses: actions/setup-java@v3
       with:
-        java-version: '17'
+       distribution: 'temurin'
+       java-version: "21" 
 
     - name: Build
-      run: |
-        ./mvnw clean install
-      working-directory: .
+      run: mvn clean install
+      working-directory: .  
 
     - name: Test
-      run: |
-        ./mvnw test
+      run: mvn test
       working-directory: .
 
     - name: Login
       run: docker login -u ${{ secrets.USERNAME_DOCKERHUB }} -p ${{ secrets.PASSWORD_DOCKERHUB }}
 
     - name: Pull Image
-      run: docker pull ${secrets.USERNAME_DOCKERHUB}/wildfly-image:latest
-
-    - name: Date & Time
-      id: date
-      run: echo "::set-output name=time::$(date +'%Y%m%d%H%M%S')"
+      # Pull custom image from Dockerhub
+      run: docker pull ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image
 
     - name: Build and Push new image
+      # Git log/hash for new image to easily know what code image specifies
       run: |
-        TIME=${{ steps.date.outputs.time }}
-        docker build -t ${secrets.USERNAME_DOCKERHUB}/wildfly-image:${TIME} .
-        docker push ${secrets.USERNAME_DOCKERHUB}/wildfly-image:${TIME}
+        GIT_LOG=$(git log --format="%h" -n 1) 
+        docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG} .
+        docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG}
+
