@@ -41,7 +41,7 @@ jobs:
 
     - name: Build and Push new image
       run: |
-        TIME=${{ steps.date.outputs.time }}
-        docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${{ TIME }} .
-        docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${{ TIME }}
+       TIME=${{ steps.date.outputs.time }}
+       docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:$TIME .
+       docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:$TIME
 
