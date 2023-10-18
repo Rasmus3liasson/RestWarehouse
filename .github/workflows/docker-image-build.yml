@@ -23,7 +23,7 @@ jobs:
 
     - name: Build
       run: mvn clean install
-      working-directory: .
+      working-directory: .  
 
     - name: Test
       run: mvn test
@@ -35,13 +35,10 @@ jobs:
     - name: Pull Image
       run: docker pull ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:latest
 
-    - name: Date & Time
-      id: date
-      run: echo "::set-output name=time::$(date +'%Y%m%d%H%M%S')"
-
     - name: Build and Push new image
+      # Git log/hash for new image to easily know what code image specifies
       run: |
-       TIME=${{ steps.date.outputs.time }}
-       docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:$TIME .
-       docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:$TIME
+        GIT_LOG=$(git log --format="%h" -n 1) 
+        docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG} .
+        docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG}
 
