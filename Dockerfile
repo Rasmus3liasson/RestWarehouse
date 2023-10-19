@@ -1,8 +1,4 @@
-FROM quay.io/wildfly/wildfly:latest
-
-# FROM bitnami/wildfly:latest
+FROM bitnami/wildfly:29.0.1
 LABEL authors="rasmuseliasson"
-
-WORKDIR /app
 
 COPY /target/RestWarehouse-1.0-SNAPSHOT.war /app

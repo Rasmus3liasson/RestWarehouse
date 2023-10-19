@@ -286,8 +286,10 @@ public class ProductResourceTest {
         dispatcher.invoke(req, res);
         assertEquals(201, res.getStatus());
 
+        List<Product> productsArr = warehouse.getProductsArr();
+        Product lastProduct = productsArr.get(productsArr.size() - 1);
         assertThat(warehouse.getProductsArr().size()).isEqualTo(5);
-        assertThat(warehouse.getProductsArr().getLast()).isEqualToIgnoringGivenFields(newProduct, "createdDate", "lastModifiedDate");
+        assertThat(lastProduct).isEqualToIgnoringGivenFields(newProduct, "createdDate", "lastModifiedDate");
     }
 
 
