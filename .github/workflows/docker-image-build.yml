@@ -38,7 +38,9 @@ jobs:
     - name: Build and Push new image
       # Git log/hash for new image to easily know what code image specifies
       run: |
-        GIT_LOG=$(git log --format="%h" -n 1) 
-        docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG} .
-        docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG}
+       GIT_LOG=$(git log --format="%h" -n 1) 
+       docker build -t ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG} .
+       docker tag ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG} ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:latest
+       docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:${GIT_LOG}
+       docker push ${{ secrets.USERNAME_DOCKERHUB }}/wildfly-image:latest
 
